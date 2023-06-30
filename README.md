@@ -12,5 +12,5 @@ Here's the pipeline. Scripts are available in the Script folder.
    b. Do fastqc (QC) check
    c. Trimming (if you need to) with Trim-galore
    d. Aling your reads to the reference genome with STAR of Kallisto. Kallisto does pseudoalignment and is less sensitive to sequencing depth than STAR. Thus, Kallisto might be more helpful when analyzing    low-depth RNAseq data. STAR will also allow you to detect novel splice variants. If you are running this with a genome reference from a model organism, most genome parameters are available from NCBI.      If you, like myself, were working with a non-model organism, you will have to generate the genome parameters with the .gff and the genome (.fasta) file with '--runMode genomeGenerate'. The script for      this is genome_dir_script.py
-   e. featurecounts()
+   e. Next: featurecounts()
    
