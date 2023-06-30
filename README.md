@@ -2,6 +2,7 @@
 I will use this pipeline to analyze the high-depth RNAseq data from the JAWesome project. 
 The first step of this project was to isolate RNA from the tissue. The tissue that we wanted to compare for differential expression was the branchial apparatus (branchial arches) and the jaw (lower and upper jaw) with the tail (a tissue that hasn't diverged phenotypically) between different species of pupfishes endemic to San Salvador Island, Bahamas, and other pupfishes as outgroup species. 
 This pipeline will be highly detailed, allowing anyone to do RNAseq analyses from scratch. There were a lot of things that if have been out there in simple terms, would have increased the processing time by A LOT. 
+Here's the pipeline. Scripts are available in the Script folder. 
 
 1. Isolate the RNA
 2. QC the RNA
