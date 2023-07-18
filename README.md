@@ -4,6 +4,7 @@ I will use this pipeline to analyze the high-depth RNAseq data from the JAWesome
 2. Compare the RNA profile from the jaw vs tail across pupfishes and identify DE genes
 3. Identify low and high-abundance transcripts from (1) and (2)
 4. Build a network of interacting genes from (1) and (2)
+
 The first step of this project was to isolate RNA from the tissue. The tissue that we will compare for DE was the branchial apparatus (branchial arches) and the jaw (lower and upper jaw) with the tail (a tissue that hasn't diverged phenotypically) between different species of pupfishes endemic to San Salvador Island, Bahamas, and other pupfishes as outgroup species. Biological replicates: minimum of 3 and maximum of 5, per species. Each biological replicate consists of the dissected tissues from 5-7 larvae. 
 Scripts are available in the Script folder.
 Here's the pipeline. 
