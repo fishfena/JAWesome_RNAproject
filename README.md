@@ -1,11 +1,15 @@
 # JAWesome_RNAproject
-I will use this pipeline to analyze the high-depth RNAseq data from the JAWesome project. 
-The first step of this project was to isolate RNA from the tissue. The tissue that we wanted to compare for differential expression was the branchial apparatus (branchial arches) and the jaw (lower and upper jaw) with the tail (a tissue that hasn't diverged phenotypically) between different species of pupfishes endemic to San Salvador Island, Bahamas, and other pupfishes as outgroup species. 
-This pipeline will be highly detailed, allowing anyone to do RNAseq analyses from scratch. There were a lot of things that if have been out there in simple terms, would have increased the processing time by A LOT. 
-Here's the pipeline. Scripts are available in the Script folder. 
+I will use this pipeline to analyze the high-depth RNAseq data from the JAWesome project. The main objectives of this project are:
+1. Compare the RNA profile from the jaw between species and identify DE genes
+2. Compare the RNA profile from the jaw vs tail across pupfishes and identify DE genes
+3. Identify low and high-abundance transcripts from (1) and (2)
+4. Build a network of interacting genes from (1) and (2)
+The first step of this project was to isolate RNA from the tissue. The tissue that we will compare for DE was the branchial apparatus (branchial arches) and the jaw (lower and upper jaw) with the tail (a tissue that hasn't diverged phenotypically) between different species of pupfishes endemic to San Salvador Island, Bahamas, and other pupfishes as outgroup species. Biological replicates: minimum of 3 and maximum of 5, per species. Each biological replicate consists of the dissected tissues from 5-7 larvae. 
+Scripts are available in the Script folder.
+Here's the pipeline. 
 
-1. Isolate the RNA
-2. QC the RNA
+1. Isolate the RNA. Specific details will be published in the paper. DM-me to talk about it.
+2. QC the RNA, preferentially w/ Bioanalyzer
 3. Send to your preferred sequencing facility
 4. Once you receive the data you will have to:
    a. Check the MF5 files for checking that the data was properly downloaded
