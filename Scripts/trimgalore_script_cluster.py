@@ -26,6 +26,6 @@ def run_fastqc(folder_path):
         print(f"TrimGalore completed for {file}")
 
 # Example usage
-folder_path = '/path/to/your/folder/in/the/cluster'
+folder_path = '/path/to/your/folder/in/the/cluster/or/your/local/machine/'
 run_fastqc(folder_path)
         
