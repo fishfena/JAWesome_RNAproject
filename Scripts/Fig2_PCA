@@ -1,0 +1,102 @@
+options(width=100)
+setwd("~/DESeq_JAWesome/")
+datadir <- "~/DESeq_JAWesome/all_counts/output_counts"
+all_countsJaw <- data.frame(fname=list.files(path=datadir,pattern="*J__total_reads_cleaned.txt"),stringsAsFactors=FALSE) #here I checked and all the files have a double __ in the output_counts folder
+all_countsTail <- data.frame(fname=list.files(path=datadir,pattern="*T__total_reads_cleaned.txt"),stringsAsFactors=FALSE)
+
+#asigning names to the columns and tables (organizing)
+all_countsJaw <- all_countsJaw %>% transmute(sample=substr(fname,1,6),fname)
+all_countsTail <- all_countsTail %>% transmute(sample=substr(fname,1,6),fname)
+
+#organizing the data
+rnacountsJaw <- all_countsJaw %>% mutate(tissue=as.factor(substr(sample,5,5)), repl=as.factor(substr(sample,3,3)),
+                                         Species=as.factor(substr(sample,2,2)), 
+                                         pop=as.factor(substr(sample,1,1)))
+rnacountsJaw <- all_countsJaw %>%
+  mutate(tissue=as.factor(substr(sample,5,5)), repl=as.factor(substr(sample,3,3)),
+         Species=as.factor(substr(sample,2,2)), 
+         pop=as.factor(substr(sample,1,1)),comParison = as.factor(ifelse(substr(sample, 2, 2) %in% c("A", "F", "M", "S"), "nonP", "P"))
+  )
+
+rnacountsTail <- all_countsTail %>% mutate(tissue=as.factor(substr(sample,5,5)), repl=as.factor(substr(sample,3,3)),
+                                           Species=as.factor(substr(sample,2,2)), 
+                                           pop=as.factor(substr(sample,1,1)))
+rnacountsTail <- all_countsTail %>%
+  mutate(tissue=as.factor(substr(sample,5,5)), repl=as.factor(substr(sample,3,3)),
+         Species=as.factor(substr(sample,2,2)), 
+         pop=as.factor(substr(sample,1,1)),comParison = as.factor(ifelse(substr(sample, 2, 2) %in% c("A", "F", "M", "S"), "nonP", "P"))
+  )
+
+merge_data <- dplyr::full_join(rnacountsJaw, rnacountsTail)
+
+##############################################################
+# Construct DESeq datasets
+##############################################################
+
+# All data
+merge_data
+dds_merged_rnacounts_PCA <- DESeqDataSetFromHTSeqCount(sampleTable = merge_data, directory=datadir,design= ~ tissue + Species + tissue:Species)
+vst_all <- vst(dds_merged_rnacounts_PCA, blind = TRUE) # calculate the across-all-samples variability
+
+# jaw-only
+dds_Jaw_PCA<-DESeqDataSetFromHTSeqCount(sampleTable=rnacountsJaw,directory=datadir,design = ~ Species)
+vst_jaw_PCA <- vst(dds_Jaw_PCA, blind = TRUE)
+
+# tail-only
+dds_Tail_PCA<-DESeqDataSetFromHTSeqCount(sampleTable=rnacountsTail,directory=datadir,design = ~ Species)
+vst_tail_PCA  <- vst(dds_Tail_PCA, blind = TRUE)
+
+#########################################################################################
+# PCA functions accounting for: tissue, species, and population differences
+#########################################################################################
+
+pcaData_all <- plotPCA(vst_all, intgroup = c("tissue", "Species", "pop"), returnData = TRUE)
+percentVar_all <- signif(as.double(100*attr(pcaData_all, "percentVar")), digits = 3)
+
+pcaData_jaw <- plotPCA(vst_jaw_PCA, intgroup = c("Species", "pop", "tissue"), returnData = TRUE)
+percentVar_jaw <- signif(as.double(100*attr(pcaData_jaw, "percentVar")), digits = 3)
+
+pcaData_tail <- plotPCA(vst_tail_PCA, intgroup = c("Species", "pop", "tissue"), returnData = TRUE)
+percentVar_tail <- signif(as.double(100*attr(pcaData_tail, "percentVar")), digits = 3)
+
+
+#########################################################################################
+# PCA plots accounting for: tissue, species, and population differences
+#########################################################################################
+
+# One example
+all_plot_jaw <- ggplot(pcaData_jaw, aes(PC1, PC2, size = tissue, 
+                                          shape = interaction(Species, pop),
+                                          fill = interaction(Species, pop), 
+                                          color = interaction(Species, pop))) +
+  geom_point(stroke = 0.8, alpha = 0.9) +
+  scale_size_manual(breaks = c("J"),
+                    values = c(3)) +  
+  scale_shape_manual(breaks = c("A.C", "F.C", "M.C", "P.C", "S.C", "A.F", "F.F", "M.F", "P.F", "S.F",
+                                "A.L", "F.L", "M.L", "P.L", "S.L", "A.N", "F.N" ,"M.N", "P.N", "S.N",
+                                "A.O", "F.O", "M.O", "P.O", "S.O"),
+                     values = c(21, 21, 22, 23, 24, 21, 21, 22, 23, 24,
+                                21, 21, 22, 23, 24, 21, 21, 22, 23, 24,
+                                21, 21, 22, 23, 24)) + 
+  scale_color_manual(breaks = c("A.C", "F.C", "M.C", "P.C", "S.C", "A.F", "F.F", "M.F", "P.F", "S.F",
+                                "A.L", "F.L", "M.L", "P.L", "S.L", "A.N", "F.N" ,"M.N", "P.N", "S.N",
+                                "A.O", "F.O", "M.O", "P.O", "S.O"),
+                     values = c("#f5c82f", "#02f1f5", "#6f02db", "#c20202", "#fc6c85", "#f5c82f", "#02f1f5", "#6f02db", "#c20202", "#fc6c85",
+                                "#f5c82f", "#02f1f5", "#6f02db", "#780202", "#fc6c85", "#b38e12", "#02f1f5", "#6f02db", "#c20202", "#fc6c85",
+                                "#f5a11c", "#02f1f5", "#9f00de", "#c20202", "#fc6c85")) +
+  scale_fill_manual(breaks = c("A.C", "F.C", "M.C", "P.C", "S.C", "A.F", "F.F", "M.F", "P.F", "S.F",
+                               "A.L", "F.L", "M.L", "P.L", "S.L", "A.N", "F.N" ,"M.N", "P.N", "S.N",
+                               "A.O", "F.O", "M.O", "P.O", "S.O"),
+                    values = c("#f5c82f", "#02f1f5", "#6f02db", "#c20202", "#fc6c85", "#f5c82f", "#02f1f5", "#6f02db", "#c20202", "#fc6c85",
+                               "#f5c82f", "#02f1f5", "#6f02db", "#780202", "#fc6c85", "#b38e12", "#02f1f5", "#6f02db", "#c20202", "#fc6c85",
+                               "#f5a11c", "#02f1f5", "#9f00de", "#c20202", "#fc6c85")) +
+  xlab(paste0("PC1 (", percentVar_jaw[1], "%)")) +
+  ylab(paste0("PC2 (", percentVar_jaw[2], "%)")) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = 'none',
+        axis.text = element_text(family = "sans"),
+        axis.title = element_text(family = "sans"))
+
+all_plot_jaw
