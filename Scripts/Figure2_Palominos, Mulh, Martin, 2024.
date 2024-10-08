@@ -1,0 +1,219 @@
+library(DESeq2)
+library(tools)
+library(limma)
+library(qvalue)
+library(dplyr)
+library(tidyverse)
+
+options(width=100)
+setwd("~/DESeq_JAWesome/")
+datadir <- "~/DESeq_JAWesome/all_counts/"
+
+all_countsJaw <- data.frame(fname=list.files(path=datadir,pattern="*J__total_reads_cleaned.txt"),stringsAsFactors=FALSE) 
+all_countsTail <- data.frame(fname=list.files(path=datadir,pattern="*T__total_reads_cleaned.txt"),stringsAsFactors=FALSE)
+
+# Plot Fig 2 A, Generalist vs. non Generalist comparison
+
+# Organizing the data according to the different variables
+all_countsJaw <- all_countsJaw %>% transmute(sample=substr(fname,1,6),fname)
+all_countsTail <- all_countsTail %>% transmute(sample=substr(fname,1,6),fname)
+
+rnacountsJaw <- all_countsJaw %>% mutate(repl=as.factor(substr(sample,3,3)),
+                                         Species=as.factor(substr(sample,2,2)), 
+                                         pop=as.factor(substr(sample,1,1)))
+
+rnacountsJaw <- rnacountsJaw %>%
+  mutate(
+    repl = as.factor(substr(sample, 3, 3)),
+    Species = as.factor(substr(sample, 2, 2)),
+    pop = as.factor(substr(sample, 1, 1)),
+    compArison = as.factor(ifelse(substr(sample, 2, 2) %in% c("F", "S", "P", "M"), "nonA", "PA"))
+  )
+
+rnacountsTail <- all_countsTail %>% mutate(repl=as.factor(substr(sample,3,3)),
+                                           Species=as.factor(substr(sample,2,2)), 
+                                           pop=as.factor(substr(sample,1,1)))
+rnacountsTail <- rnacountsTail %>%
+  mutate(
+    repl = as.factor(substr(sample, 3, 3)),
+    Species = as.factor(substr(sample, 2, 2)),
+    pop = as.factor(substr(sample, 1, 1)),
+    compArison = as.factor(ifelse(substr(sample, 2, 2) %in% c("F", "S", "P", "M"), "nonA", "PA"))
+  ) 
+
+# Importing the counts from the data set and the design 
+dds_Jaw<-DESeqDataSetFromHTSeqCount(sampleTable=rnacountsJaw,directory=datadir,design = ~ compArison)
+dds_Tail<-DESeqDataSetFromHTSeqCount(sampleTable=rnacountsTail,directory=datadir,design= ~ compArison)
+
+# Check dds dataset
+dds_Jaw
+dds_Tail
+# Estimate dispersion function and size factors to normalize counts. 
+dds_Jaw <- estimateSizeFactors(dds_Jaw)
+dds_Jaw # 33363 genes in total 
+dds_Tail <- estimateSizeFactors(dds_Tail)
+dds_Tail # 33363 genes in total
+
+sizeFactors(dds_Jaw)
+sizeFactors(dds_Tail)
+
+round(sizeFactors(dds_Jaw),3) # Round size factors to only 3 digits
+round(sizeFactors(dds_Tail),3)
+
+head(counts(dds_Jaw,normalize=TRUE),3) # Now, show the normalize data only for the first three genes
+head(counts(dds_Tail,normalize=TRUE),3)
+
+counts(dds_Jaw,normalize=TRUE) # Everything normalized
+counts(dds_Tail,normalize=TRUE)
+
+counts(dds_Jaw)["ENSCVAT00000000028",] # Check normalized counts for a random gene
+counts(dds_Tail)["ENSCVAT00000000028",]
+
+summary(sizeFactors(dds_Jaw)) # Summary of the distribution of the counts
+summary(sizeFactors(dds_Tail))
+
+dds_Jaw <- estimateDispersions(dds_Jaw) 
+dds_Tail <- estimateDispersions(dds_Tail)
+
+dds_Jaw@dispersionFunction
+dds_Tail@dispersionFunction
+
+alphasJaw <- dispersions(dds_Jaw)
+alphasTail <- dispersions(dds_Tail)
+
+length(alphasJaw) # These is the amount of genes
+length(alphasTail)
+
+round(alphasJaw[1:33363],4) # Round all values to 4 digits
+round(alphasTail[1:33363],4)
+
+# Normalizing: Calculating and applying the size factor
+dds_Jaw <- estimateSizeFactors(dds_Jaw)
+dds_Tail <- estimateSizeFactors(dds_Tail)
+
+plot(sizeFactors(dds_Jaw), colSums(counts(dds_Jaw)), # assess them
+      ylab = "library sizes", xlab = "size factors", cex = .6 )
+plot(sizeFactors(dds_Tail), colSums(counts(dds_Tail)), # assess them
+     ylab = "library sizes", xlab = "size factors", cex = .6 ) 
+
+# Filtering by reads greater than 10 across species
+baseMean_values_jaw <- mcols(dds_Jaw)$baseMean # Checking genes whose mean expression across species was less than 10
+occurrences_smaller_than_10_jaw <- sum(baseMean_values_jaw < 10, na.rm = TRUE)
+occurrences_greater_than_10_jaw <- sum(baseMean_values_jaw > 10, na.rm = TRUE)
+
+baseMean_values_tail <- mcols(dds_Tail)$baseMean # Checking genes whose mean expression across species was less than 10
+occurrences_smaller_than_10_tail <- sum(baseMean_values_tail < 10)
+occurrences_greater_than_10_tail <- sum(baseMean_values_tail > 10)
+
+rows_greater_than_10_jaw <- rownames(dds_Jaw)[baseMean_values_jaw > 10]
+dds_Jaw_filtered <- dds_Jaw[rows_greater_than_10_jaw, ]
+dds_Jaw_filtered # 16356 after filtering
+
+rows_greater_than_10_tail <- rownames(dds_Tail)[baseMean_values_tail > 10]
+dds_Tail_filtered <- dds_Tail[rows_greater_than_10_tail, ]
+dds_Tail_filtered # 14338 after filtering
+
+# Run DESeq analysis
+ddsJaw_DESeq <- DESeq(dds_Jaw_filtered,
+                      test="Wald",
+                      fitType = "parametric",
+                      full=design(dds_Jaw))
+
+ddsTail_DESeq <- DESeq(dds_Tail_filtered,
+                       test="Wald",
+                       fitType = "parametric",
+                       full=design(dds_Tail))
+
+# FDR 0.01
+resultsDESeqJaw_AvsnonA_ <- results(ddsJaw_DESeq, independentFiltering=TRUE, alpha = 0.01, pAdjustMethod = "BH")
+resultsDESeqTail_AvsnonA_ <- results(ddsTail_DESeq, independentFiltering=TRUE, alpha = 0.01, pAdjustMethod = "BH") 
+
+############################################################
+###############           Volcano Plot        ##############
+############################################################
+# LFC > 0.2 and pvalue < 0.05
+library(ggplot2)
+library(knitr)
+library(ggrepel)
+
+VolPlot_Jaw_AvsNonA_ <- data.frame( #
+  geneName = rownames(resultsDESeqJaw_AvsnonA),
+  logFC = resultsDESeqJaw_AvsnonA$log2FoldChange,  
+  FDR = resultsDESeqJaw_AvsnonA$padj,              
+  Expression = case_when(
+    resultsDESeqJaw_AvsnonA$log2FoldChange >= log2(1.15) & resultsDESeqJaw_AvsnonA$padj <= 0.05 ~ "Up-regulated",
+    resultsDESeqJaw_AvsnonA$log2FoldChange <= -log2(1.15) & resultsDESeqJaw_AvsnonA$padj <= 0.05 ~ "Down-regulated",
+    TRUE ~ "Unchanged"
+  )
+)
+
+Plot_Jaw_AvsNonA_ <- ggplot(VolPlot_Jaw_AvsNonA_, aes(logFC, -log10(FDR))) +
+  geom_point(data = subset(VolPlot_Jaw_AvsNonA_, logFC >= -30 & logFC <= 30),
+             aes(color = Expression, fill = Expression), size = 8/5, shape=22) + 
+  xlab(expression("log"[2]*"FC")) + 
+  ylab(expression("-log"[10]*"P-value")) +
+  scale_color_manual(values = c("gray20", "gray20", "gray20")) +
+  scale_fill_manual(values = c("#f7e49e", "gray50", "#f5c82f")) +
+  guides(colour = guide_legend(override.aes = list(size = 1.5))) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.background = element_rect(fill = "white")) +
+  coord_cartesian(xlim = c(-30, 30), ylim= c(0, 100))
+
+  VolPlot_Tail_AvsNonA_ <- data.frame(
+  geneName = rownames(resultsDESeqTail_AvsnonA),
+  logFC = resultsDESeqTail_AvsnonA$log2FoldChange, 
+  FDR = resultsDESeqTail_AvsnonA$padj,            
+  Expression = case_when(
+    resultsDESeqTail_AvsnonA$log2FoldChange >= log2(1.15) & resultsDESeqTail_AvsnonA$padj <= 0.05 ~ "Up-regulated",
+    resultsDESeqTail_AvsnonA$log2FoldChange <= -log2(1.15) & resultsDESeqTail_AvsnonA$padj <= 0.05 ~ "Down-regulated",
+    TRUE ~ "Unchanged"
+  )
+)
+
+Plot_Tail_AvsNonA_ <- ggplot(VolPlot_Tail_AvsNonA_, aes(logFC, -log10(FDR))) +
+  geom_point(data = subset(VolPlot_Tail_AvsNonA_, logFC >= -30 & logFC <= 30),
+             aes(color = Expression, fill = Expression), size = 8/5, shape=21) +  
+  xlab(expression("log"[2]*"FC")) + 
+  ylab(expression("-log"[10]*"P-value")) +
+  scale_color_manual(values = c("#f7e49e", "gray50", "#f5c82f")) +
+  scale_fill_manual(values = c("white", "white", "white")) +
+  guides(colour = guide_legend(override.aes = list(size = 1.5))) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5),
+        panel.background = element_rect(fill = "white")) +
+  coord_cartesian(xlim = c(-30, 30), ylim = c(0, 100))
+
+############################################################
+###############           Venn                ##############
+############################################################
+
+upregulated_genes_jaw_AvsNonA_ <- VolPlot_Jaw_AvsNonA_$geneName[VolPlot_Jaw_AvsNonA_$Expression == "Up-regulated"]
+upregulated_genes_tail_AvsNonA_ <- VolPlot_Tail_AvsNonA_$geneName[VolPlot_Tail_AvsNonA_$Expression == "Up-regulated"]
+downregulated_genes_jaw_AvsNonA_ <- VolPlot_Jaw_AvsNonA_$geneName[VolPlot_Jaw_AvsNonA_$Expression == "Down-regulated"]
+downregulated_genes_tail_AvsNonA_ <- VolPlot_Tail_AvsNonA_$geneName[VolPlot_Tail_AvsNonA_$Expression == "Down-regulated"]
+
+upregulated_genes_jaw_info_AvsNonA_ <- resultsDESeqJaw_AvsnonA_2[upregulated_genes_jaw_AvsNonA_, ]
+downregulated_genes_jaw_info_AvsNonA_ <- resultsDESeqJaw_AvsnonA_2[downregulated_genes_jaw_AvsNonA_, ]
+upregulated_genes_tail_info_AvsNonA_ <- resultsDESeqTail_AvsnonA_2[upregulated_genes_tail_AvsNonA_, ]
+downregulated_genes_tail_info_AvsNonA_ <- resultsDESeqTail_AvsnonA_2[downregulated_genes_tail_AvsNonA_, ]
+
+# DEG total
+DEG_AvsnonA_jaw <- rbind(upregulated_genes_jaw_info_AvsNonA_, downregulated_genes_jaw_info_AvsNonA_) 
+DEG_AvsnonA_tail <- rbind(upregulated_genes_tail_info_AvsNonA_, downregulated_genes_tail_info_AvsNonA_)
+
+# Common DEG between tissues
+commonJawandTail_AvsNonA_ <- intersect(rownames(DEG_AvsnonA_jaw),rownames(DEG_AvsnonA_tail))
+(commonJawandTail_AvsNonA_)
+
+a <- list(
+  Jaw = sample(rownames(DEG_AvsnonA_jaw)), 
+  Tail = sample(rownames(DEG_AvsnonA_tail))
+)
+
+venn_AvsNonA_ <- ggvenn(a,
+                        stroke_linetype = 1,
+                        stroke_size = 1,
+                        stroke_color = "#f5c82f",  
+                        fill_color = c("#fad34d", "white"))
+venn_AvsNonA_
