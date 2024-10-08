@@ -1,1 +1,63 @@
+# To quantify the mean counts across samples
+gene_id <- "ENSCVAT00000009406"
+gene_results <- resultsDESeqJaw_PvsnonP_[rownames(resultsDESeqJaw_PvsnonP_) == gene_id, ]
+gene_results$log2FoldChange
+gene_results
 
+plotCounts(ddsJaw_DESeq, 4561,intgroup="Species", normalized = TRUE, transform = FALSE, samples = NULL) 
+
+pycr3 <- plotCounts(ddsJaw_DESeq, gene = "ENSCVAT00000009406",intgroup=c("Species","pop"), 
+                normalized = TRUE, transform = FALSE, samples = NULL,
+                returnData = TRUE) 
+pycr3
+
+library(dplyr)
+
+pycr3_plot <- ggplot(pycr3, aes(x = Species, y = count, 
+                  shape = interaction(Species, pop), 
+                  color = interaction(Species, pop),
+                  fill = interaction(Species, pop) )) + 
+  geom_point(position = position_jitter(width = 0.1, height = 0), size = 3) +
+  theme_bw() +
+  ggtitle("pycr3") +
+  theme(plot.title = element_text(face = "italic", hjust = 0.5)) +
+  scale_shape_manual(breaks = c("A.C", "F.C", "M.C", "P.C", "S.C", "A.F", "F.F", "M.F", "P.F", "S.F",
+                                "A.L", "F.L", "M.L", "P.L", "S.L", "A.N", "F.N" ,"M.N", "P.N", "S.N",
+                                "A.O", "F.O", "M.O", "P.O", "S.O"),
+                     values = c(21, 21, 22, 23, 24, 21, 21, 22, 23, 24,
+                                21, 21, 22, 23, 24, 21, 21, 22, 23, 24,
+                                21, 21, 22, 23, 24)) +
+  scale_color_manual(breaks = c("A.C", "F.C", "M.C", "P.C", "S.C", "A.F", "F.F", "M.F", "P.F", "S.F",
+                                "A.L", "F.L", "M.L", "P.L", "S.L", "A.N", "F.N" ,"M.N", "P.N", "S.N",
+                                "A.O", "F.O", "M.O", "P.O", "S.O"),
+                     values = c("#f5c82f", "#02f1f5", "#6f02db", "#c20202", "#fc6c85", "#f5c82f", "#02f1f5", "#6f02db", "#c20202", "#fc6c85",
+                                "#f5c82f", "#02f1f5", "#6f02db", "#780202", "#fc6c85", "#b38e12", "#02f1f5", "#6f02db", "#c20202", "#fc6c85",
+                                "#f5a11c", "#02f1f5", "#9f00de", "#c20202", "#fc6c85")) +
+  scale_fill_manual(breaks = c("A.C", "F.C", "M.C", "P.C", "S.C", "A.F", "F.F", "M.F", "P.F", "S.F",
+                               "A.L", "F.L", "M.L", "P.L", "S.L", "A.N", "F.N" ,"M.N", "P.N", "S.N",
+                               "A.O", "F.O", "M.O", "P.O", "S.O"),
+                    values = c("#f5c82f", "#02f1f5", "#6f02db", "#c20202", "#fc6c85", "#f5c82f", "#02f1f5", "#6f02db", "#c20202", "#fc6c85",
+                               "#f5c82f", "#02f1f5", "#6f02db", "#780202", "#fc6c85", "#b38e12", "#02f1f5", "#6f02db", "#c20202", "#fc6c85",
+                               "#f5a11c", "#02f1f5", "#9f00de", "#c20202", "#fc6c85"))
+
+pycr3_plot
+
+mean_data_pycr3 <- pycr3 %>%
+  group_by(Species) %>%
+  summarize(mean_count = mean(count),
+            s.e. = sd(count) / sqrt(n()))
+mean_data_pycr3
+
+mean_data_pycr3 <- data.frame(
+  Species = factor(c("A", "F", "M", "P", "S")),
+  mean_count = c(7.97, 22.9, 23.2, 0, 1.39),
+  pop = c("C", "F", "O", "L", "C")
+)
+
+pycr3_plot_mean <- pycr3_plot +
+  geom_segment(data = mean_data_pycr3,
+               aes(x = as.integer(Species) - 0.5, xend = as.integer(Species) + 0.5,
+                   y = mean_count, yend = mean_count),
+               color = c("#f5c82f", "#02f1f5", "#6f02db", "#c20202","#fc6c85"),
+               size = 1, linetype = "solid")
+pycr3_plot_mean
