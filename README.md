@@ -1,9 +1,9 @@
 # JAWesome_RNAproject
-This project is part of my K99/R00 Pathway to Independence Award and have several aims. This first READMe contain the scripts and others for a manuscript that is currently in revision, but posted on bioRxv here: https://www.biorxiv.org/content/10.1101/2024.10.02.616385v1.full.
+This project is part of my NIH-NIDCR K99/R00 Pathway to Independence Award and have several aims. This first READMe contain the scripts and others for completing the first aim of the project, in the form of a manuscript, currently in revision but posted on bioRxv here: https://www.biorxiv.org/content/10.1101/2024.10.02.616385v1.full.
 
-The main objective of the manuscript is to identify and validate differentially-expressed genes in the specialists that have signature of selection found through genome analyses. With this piple I analyzed high-depth (>50M reads) tissue-specific (craniofacial vs. caudal tail tissue) RNAseq data from 6 different pupfish species and populations, known for their high craniofacial divergence. We used high-depth RNAseq to identify novel low-abundance transcripts (i.e., chemokine or other membrane receptors) differntially expressed between species and tissues. 
+The main objective of the manuscript is to identify and validate tissue-specific (in this case focused on the craniofacial tissues) differentially-expressed genes (DEGs) in a group of dietary specialist pupfishes and overlap these craniofacial-DEGs with genes that we know carry fixed single-nuclear polymorphisms in their regulatory regions. With this pipeline, I analyzed high-depth (>50M reads) tissue-specific (craniofacial vs. caudal tail tissue) RNAseq data from 6 different pupfish species and populations, known for their high craniofacial divergence. We used high-depth RNAseq to identify novel low-abundance transcripts (i.e., chemokine or other membrane receptors) differentially expressed between species and tissues. 
 
-A suggested standard pipe-line:
+A suggested standard pipeline:
 1. Experimental design
 2. Isolate the RNA
 3. QC the RNA
